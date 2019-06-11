@@ -1,0 +1,42 @@
+version: '3'
+services:
+
+  back:
+    image: thecodingmachine/nodejs:10
+    command: adonis serve --dev
+    environment:
+      STARTUP_COMMAND_1: 'sudo npm i -g @adonisjs/cli'
+      STARTUP_COMMAND_2: 'adonis migration:run'
+    working_dir: /usr/src/app
+    labels:
+      - 'traefik.backend=backend'
+      - 'traefik.frontend.rule=Host:back.${HOST_URL}'
+      - 'traefik.port=8080'
+    volumes:
+      - ./back:/usr/src/app
+    env_file:
+      - ./.env
+
+  mysql:
+    image: mysql:5.7
+    labels:
+      - 'traefik.enable=false'
+    env_file:
+      - ./.env
+
+  traefik:
+    command: '--docker --logLevel=DEBUG'
+    image: traefik:1.7
+    labels:
+      - 'traefik.backend=traefik'
+      - 'traefik.frontend.rule=Host:traefik.${HOST_URL}'
+      - 'traefik.port=8080'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '8080:8080'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - './traefik/traefik.dev.toml:/traefik.toml:ro'
+      - './traefik/acme.json:/acme.json:rw'
+
